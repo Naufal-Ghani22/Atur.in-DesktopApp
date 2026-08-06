@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FlowPulse / ATUR.IN - Asisten Produktivitas & Manajemen Harian
+   ATUR.IN - Asisten Produktivitas & Manajemen Harian
    Design System & Styling
    ========================================================================== */
 
@@ -913,96 +913,199 @@ input, textarea, select {
     color: var(--accent-rose);
 }
 
-/* 3. DAILY SCHEDULE STYLES (CUSTOM DURATION & SPAN) */
-.schedule-container {
-    padding: 24px;
-    max-height: calc(100vh - 220px);
-    overflow-y: auto;
+/* 3. GOOGLE CALENDAR DAY VIEW STYLES */
+.gcal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-.timeline-header {
-    display: grid;
-    grid-template-columns: 100px 1fr;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-}
-
-.timeline-body {
+.gcal-calendar-card {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-top: 16px;
-}
-
-.timeblock-card {
-    display: grid;
-    grid-template-columns: 140px 1fr;
-    align-items: center;
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 14px 18px;
-    transition: var(--transition-fast);
-    position: relative;
+    max-height: calc(100vh - 200px);
     overflow: hidden;
 }
 
-.timeblock-card:hover {
-    border-color: var(--border-highlight);
-    background: rgba(30, 41, 59, 0.85);
-    transform: translateX(4px);
+.gcal-day-header {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(15, 23, 42, 0.4);
 }
 
-/* Timeblock Color Accents */
-.timeblock-card.indigo { border-left: 5px solid var(--accent-primary); }
-.timeblock-card.blue { border-left: 5px solid var(--accent-cyan); }
-.timeblock-card.emerald { border-left: 5px solid var(--accent-emerald); }
-.timeblock-card.amber { border-left: 5px solid var(--accent-amber); }
-.timeblock-card.rose { border-left: 5px solid var(--accent-rose); }
-
-.tb-time-range {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.tb-time-text {
+.gcal-timezone-label {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
+    font-size: 11px;
+    color: var(--text-dim);
     font-weight: 700;
+}
+
+.gcal-day-title {
+    font-size: 16px;
+    font-weight: 800;
     color: var(--text-main);
 }
 
-.tb-duration-badge {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--accent-cyan);
-    background: rgba(6, 182, 212, 0.12);
-    padding: 2px 8px;
-    border-radius: 10px;
-    width: fit-content;
+.gcal-grid-wrapper {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    overflow-y: auto;
+    position: relative;
+    max-height: calc(100vh - 270px);
 }
 
-.tb-content {
+.gcal-time-column {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+    background: rgba(15, 23, 42, 0.2);
+}
+
+.gcal-hour-label {
+    height: 60px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 600;
+    padding: 6px 12px 0 0;
+    text-align: right;
+    user-select: none;
+}
+
+.gcal-grid-body {
+    position: relative;
+    width: 100%;
+}
+
+.gcal-grid-rows {
+    display: flex;
+    flex-direction: column;
+}
+
+.gcal-hour-row {
+    height: 60px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.gcal-hour-row:hover {
+    background: rgba(99, 102, 241, 0.04);
+}
+
+/* Red Indicator Line for Current Time */
+.gcal-now-indicator {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 2px solid var(--accent-rose);
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+}
+
+.gcal-now-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--accent-rose);
+    border-radius: 50%;
+    margin-left: -5px;
+    box-shadow: 0 0 8px var(--accent-rose);
+}
+
+/* Google Calendar Event Blocks Overlay */
+.gcal-events-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none; /* allows row clicking underneath if transparent */
+}
+
+.gcal-event-card {
+    position: absolute;
+    left: 16px;
+    right: 20px;
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.gcal-event-card:hover {
+    transform: scale(1.01);
+    z-index: 8;
+}
+
+/* Pastel Glass Preset Colors */
+.gcal-event-card.indigo {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(168, 85, 247, 0.25));
+    border-left: 5px solid var(--accent-primary);
+    border-top: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.gcal-event-card.blue {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(59, 130, 246, 0.25));
+    border-left: 5px solid var(--accent-cyan);
+    border-top: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.gcal-event-card.emerald {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(52, 211, 153, 0.25));
+    border-left: 5px solid var(--accent-emerald);
+    border-top: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.gcal-event-card.amber {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(251, 191, 36, 0.25));
+    border-left: 5px solid var(--accent-amber);
+    border-top: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.gcal-event-card.rose {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(251, 113, 133, 0.25));
+    border-left: 5px solid var(--accent-rose);
+    border-top: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.gcal-event-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.tb-title {
-    font-size: 15px;
+.gcal-event-title {
+    font-size: 14px;
     font-weight: 700;
     color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.tb-actions {
+.gcal-event-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-top: 2px;
+}
+
+.gcal-event-actions {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 /* 4. FOCUS TIMER STYLES */
@@ -1207,7 +1310,7 @@ input, textarea, select {
 }
 
 .bar-track {
-    height: 100%;
+    height: 10px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 5px;
     overflow: hidden;

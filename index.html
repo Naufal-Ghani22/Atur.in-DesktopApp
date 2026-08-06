@@ -155,7 +155,7 @@
                         </div>
                     </div>
 
-                    <!-- Dashboard Columns (Priority Tasks & Quick Timer & Upcoming Schedule) -->
+                    <!-- Dashboard Columns -->
                     <div class="dashboard-columns">
                         <!-- Priority Tasks Panel -->
                         <div class="dashboard-card glass">
@@ -296,25 +296,55 @@
                     </div>
                 </section>
 
-                <!-- 3. DAILY SCHEDULE VIEW -->
+                <!-- 3. DAILY SCHEDULE VIEW (GOOGLE CALENDAR STYLE DAY VIEW) -->
                 <section id="view-schedule" class="tab-view">
                     <div class="view-header">
                         <div>
-                            <h2>Jadwal & Time Blocker Harian</h2>
-                            <p>Sesuaikan durasi blok waktu mulai & selesai aktivitas kerja harianmu.</p>
+                            <h2>Jadwal & Calendar Harian</h2>
+                            <p>Tampilan visual Google Calendar style untuk merencanakan jam aktivitas harianmu.</p>
                         </div>
-                        <button class="btn-secondary" id="btn-add-timeblock">
-                            <i class="fa-solid fa-plus"></i> Tambah Blok Waktu
-                        </button>
+                        <div class="gcal-header-actions">
+                            <button class="btn-secondary" id="btn-gcal-today">
+                                <i class="fa-solid fa-calendar-check"></i> Hari Ini
+                            </button>
+                            <button class="btn-primary" id="btn-add-timeblock">
+                                <i class="fa-solid fa-plus"></i> Tambah Jadwal
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="schedule-container glass">
-                        <div class="timeline-header">
-                            <span class="time-col">Waktu</span>
-                            <span class="activity-col">Blok Aktivitas Harian</span>
+                    <!-- Google Calendar Day View Container -->
+                    <div class="gcal-calendar-card glass">
+                        <div class="gcal-day-header">
+                            <div class="gcal-timezone-label">GMT+7</div>
+                            <div class="gcal-day-title">
+                                <span id="gcal-date-heading">Jadwal Aktivitas Hari Ini</span>
+                            </div>
                         </div>
-                        <div class="timeline-body" id="timeline-slots">
-                            <!-- Timeline Generated via JS -->
+
+                        <div class="gcal-grid-wrapper">
+                            <!-- Left Hour Labels -->
+                            <div class="gcal-time-column" id="gcal-time-column">
+                                <!-- Hour labels 06:00 to 23:00 injected via JS -->
+                            </div>
+
+                            <!-- Right Grid & Event Blocks Overlay -->
+                            <div class="gcal-grid-body" id="gcal-grid-body">
+                                <!-- Grid Lines -->
+                                <div class="gcal-grid-rows" id="gcal-grid-rows">
+                                    <!-- 18 Hour Row Lines injected via JS -->
+                                </div>
+
+                                <!-- Live Current Time Red Line Indicator -->
+                                <div class="gcal-now-indicator" id="gcal-now-line">
+                                    <div class="gcal-now-dot"></div>
+                                </div>
+
+                                <!-- Dynamic Event Blocks Container -->
+                                <div class="gcal-events-overlay" id="gcal-events-overlay">
+                                    <!-- Dynamic Event Cards Injected via JS -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>

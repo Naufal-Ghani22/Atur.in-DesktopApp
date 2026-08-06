@@ -1,7 +1,11 @@
 /* ==========================================================================
    ATUR.IN - Asisten Produktivitas & Manajemen Harian
-   JavaScript Application Engine
+   JavaScript Application Engine & Google Calendar Day View Renderer
    ========================================================================== */
+
+const START_HOUR = 6;  // 06:00
+const END_HOUR = 23;   // 23:00
+const ROW_HEIGHT = 60; // 60px per hour slot
 
 // Default Seed Data for New Users
 const INITIAL_TASKS = [
@@ -59,8 +63,6 @@ const INITIAL_SCHEDULE = [
 class AppState {
     constructor() {
         this.tasks = JSON.parse(localStorage.getItem('fp_tasks')) || INITIAL_TASKS;
-        
-        // Migrate or load schedule
         const rawSchedule = JSON.parse(localStorage.getItem('fp_schedule'));
         this.schedule = this.migrateSchedule(rawSchedule);
         
@@ -69,10 +71,9 @@ class AppState {
         ];
         this.streakDays = parseInt(localStorage.getItem('fp_streak')) || 3;
 
-        // Timer State
         this.timer = {
-            mode: 'focus', // 'focus', 'shortBreak', 'longBreak'
-            duration: 25 * 60, // in seconds
+            mode: 'focus',
+            duration: 25 * 60,
             remaining: 25 * 60,
             isRunning: false,
             intervalId: null,
@@ -88,7 +89,6 @@ class AppState {
         return rawSchedule.map((item, idx) => {
             if (item.startTime && item.endTime) return item;
             
-            // Legacy migration from { hour, title }
             const h = item.hour || 9;
             const startStr = `${h < 10 ? '0' : ''}${h}:00`;
             const endStr = `${(h + 1) < 10 ? '0' : ''}${h + 1}:00`;
@@ -157,6 +157,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initGlobalSearch();
     renderAll();
 
+    const todayBtn = document.getElementById('btn-gcal-today');
+    if (todayBtn) {
+        todayBtn.addEventListener('click', scrollToCurrentTimeInGCal);
+    }
+
     document.getElementById('btn-seed-data').addEventListener('click', () => {
         if (confirm('Apakah Anda ingin memuat ulang data contoh? Data yang ada akan diperbarui.')) {
             state.resetToDemo();
@@ -171,10 +176,13 @@ function initClock() {
     function updateClock() {
         const now = new Date();
         const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
-        const dateStr = now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+        const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
         document.getElementById('current-time').textContent = timeStr;
         document.getElementById('current-date').textContent = dateStr;
+
+        const headingElem = document.getElementById('gcal-date-heading');
+        if (headingElem) headingElem.textContent = `Jadwal Harian (${dateStr})`;
 
         const hour = now.getHours();
         let greeting = 'Selamat Datang di ATUR.IN! 👋';
@@ -185,9 +193,12 @@ function initClock() {
 
         const greetingElem = document.getElementById('greeting-title');
         if (greetingElem) greetingElem.textContent = greeting;
+
+        // Update Google Calendar Now Red Line
+        updateGCalNowIndicator(now);
     }
     updateClock();
-    setInterval(updateClock, 1000);
+    setInterval(updateClock, 10000);
 }
 
 // Navigation Tabs
@@ -211,7 +222,10 @@ function switchTab(tabId) {
     if (activeNav) activeNav.classList.add('active');
     if (activeView) activeView.classList.add('active');
 
-    if (tabId === 'schedule') renderScheduleTimeline();
+    if (tabId === 'schedule') {
+        renderScheduleTimeline();
+        setTimeout(scrollToCurrentTimeInGCal, 100);
+    }
     if (tabId === 'analytics') renderAnalytics();
     if (tabId === 'timer') updateTimerTaskDropdown();
 }
@@ -417,78 +431,127 @@ function renderDashboardUpcomingAgenda() {
     });
 }
 
-// DAILY SCHEDULE TIMELINE & DURATION COMPUTATION
-function calculateDurationText(startTime, endTime) {
-    const [startH, startM] = startTime.split(':').map(Number);
-    const [endH, endM] = endTime.split(':').map(Number);
-
-    const startTotal = startH * 60 + startM;
-    const endTotal = endH * 60 + endM;
-
-    let diff = endTotal - startTotal;
-    if (diff <= 0) diff += 24 * 60; // crossover midnight fallback
-
-    const hours = Math.floor(diff / 60);
-    const mins = diff % 60;
-
-    if (hours > 0 && mins > 0) return `${hours} jam ${mins}m`;
-    if (hours > 0) return `${hours} jam`;
-    return `${mins}m`;
-}
-
+// GOOGLE CALENDAR STYLE DAY VIEW ENGINE
 function renderScheduleTimeline() {
-    const container = document.getElementById('timeline-slots');
-    if (!container) return;
-    container.innerHTML = '';
+    const timeCol = document.getElementById('gcal-time-column');
+    const gridRows = document.getElementById('gcal-grid-rows');
+    const overlay = document.getElementById('gcal-events-overlay');
 
-    const sortedSchedule = [...state.schedule].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    if (!timeCol || !gridRows || !overlay) return;
 
-    if (sortedSchedule.length === 0) {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-                <i class="fa-solid fa-calendar-xmark" style="font-size: 32px; color: var(--text-dim); margin-bottom: 12px;"></i>
-                <p>Belum ada blok waktu aktivitas harian. Klik tombol <strong>+ Tambah Blok Waktu</strong> di atas!</p>
-            </div>
-        `;
-        return;
+    timeCol.innerHTML = '';
+    gridRows.innerHTML = '';
+    overlay.innerHTML = '';
+
+    // Render 18 hour slots (06:00 to 23:00)
+    for (let h = START_HOUR; h <= END_HOUR; h++) {
+        const hourFormatted = `${h < 10 ? '0' : ''}${h}:00`;
+
+        // Time Column Label
+        const label = document.createElement('div');
+        label.className = 'gcal-hour-label';
+        label.textContent = hourFormatted;
+        timeCol.appendChild(label);
+
+        // Grid Row Line
+        const row = document.createElement('div');
+        row.className = 'gcal-hour-row';
+        row.dataset.hour = h;
+        row.title = `Klik untuk tambah jadwal jam ${hourFormatted}`;
+        row.addEventListener('click', () => {
+            const startStr = `${h < 10 ? '0' : ''}${h}:00`;
+            const nextH = h + 1 <= 23 ? h + 1 : 23;
+            const endStr = `${nextH < 10 ? '0' : ''}${nextH}:00`;
+            openAddTimeblockModalWithRange(startStr, endStr);
+        });
+        gridRows.appendChild(row);
     }
 
-    sortedSchedule.forEach(item => {
-        const card = document.createElement('div');
-        const colorClass = item.color || 'indigo';
-        card.className = `timeblock-card ${colorClass}`;
+    // Render Event Cards positioned absolutely on grid
+    state.schedule.forEach(item => {
+        const [startH, startM] = item.startTime.split(':').map(Number);
+        const [endH, endM] = item.endTime.split(':').map(Number);
 
-        const durationStr = calculateDurationText(item.startTime, item.endTime);
+        // Calculate Y-Position & Height
+        const startTotalHours = (startH - START_HOUR) + (startM / 60);
+        const endTotalHours = (endH - START_HOUR) + (endM / 60);
+
+        if (startTotalHours < 0 && endTotalHours < 0) return;
+
+        const topPos = startTotalHours * ROW_HEIGHT;
+        let heightVal = (endTotalHours - startTotalHours) * ROW_HEIGHT;
+        if (heightVal < 36) heightVal = 36; // Min height for short events
+
+        const colorClass = item.color || 'indigo';
+
+        const card = document.createElement('div');
+        card.className = `gcal-event-card ${colorClass}`;
+        card.style.top = `${topPos}px`;
+        card.style.height = `${heightVal}px`;
 
         card.innerHTML = `
-            <div class="tb-time-range">
-                <span class="tb-time-text">${item.startTime} - ${item.endTime}</span>
-                <span class="tb-duration-badge"><i class="fa-regular fa-clock"></i> ${durationStr}</span>
-            </div>
-            <div class="tb-content">
-                <span class="tb-title">${escapeHtml(item.title)}</span>
-                <div class="tb-actions">
-                    <button class="card-action-btn" onclick="editTimeblock('${item.id}')" title="Edit Jam/Aktivitas">
+            <div class="gcal-event-header">
+                <div>
+                    <div class="gcal-event-title">${escapeHtml(item.title)}</div>
+                    <div class="gcal-event-time">${item.startTime} - ${item.endTime}</div>
+                </div>
+                <div class="gcal-event-actions">
+                    <button class="card-action-btn" onclick="event.stopPropagation(); editTimeblock('${item.id}');" title="Edit">
                         <i class="fa-solid fa-pen"></i>
                     </button>
-                    <button class="card-action-btn delete" onclick="deleteTimeblock('${item.id}')" title="Hapus Blok">
+                    <button class="card-action-btn delete" onclick="event.stopPropagation(); deleteTimeblock('${item.id}');" title="Hapus">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
             </div>
         `;
 
-        container.appendChild(card);
+        overlay.appendChild(card);
     });
+
+    // Update current time indicator line
+    updateGCalNowIndicator(new Date());
+}
+
+function updateGCalNowIndicator(now) {
+    const indicator = document.getElementById('gcal-now-line');
+    if (!indicator) return;
+
+    const currentH = now.getHours();
+    const currentM = now.getMinutes();
+
+    if (currentH < START_HOUR || currentH > END_HOUR) {
+        indicator.style.display = 'none';
+        return;
+    }
+
+    indicator.style.display = 'flex';
+    const totalHours = (currentH - START_HOUR) + (currentM / 60);
+    const topPos = totalHours * ROW_HEIGHT;
+    indicator.style.top = `${topPos}px`;
+}
+
+function scrollToCurrentTimeInGCal() {
+    const wrapper = document.querySelector('.gcal-grid-wrapper');
+    const indicator = document.getElementById('gcal-now-line');
+
+    if (wrapper && indicator && indicator.style.display !== 'none') {
+        const topPos = parseInt(indicator.style.top) || 0;
+        wrapper.scrollTo({ top: Math.max(0, topPos - 120), behavior: 'smooth' });
+    }
+}
+
+function openAddTimeblockModalWithRange(startStr = '09:00', endStr = '10:30') {
+    document.getElementById('timeblock-form').reset();
+    document.getElementById('tb-id').value = '';
+    document.getElementById('tb-start-time').value = startStr;
+    document.getElementById('tb-end-time').value = endStr;
+    document.getElementById('timeblock-modal-title').textContent = 'Tambah Blok Waktu Jadwal';
+    document.getElementById('timeblock-modal').classList.add('active');
 }
 
 function openAddTimeblockModal() {
-    document.getElementById('timeblock-form').reset();
-    document.getElementById('tb-id').value = '';
-    document.getElementById('tb-start-time').value = '09:00';
-    document.getElementById('tb-end-time').value = '10:30';
-    document.getElementById('timeblock-modal-title').textContent = 'Tambah Blok Waktu Jadwal';
-    document.getElementById('timeblock-modal').classList.add('active');
+    openAddTimeblockModalWithRange('09:00', '10:30');
 }
 
 function editTimeblock(timeblockId) {
@@ -823,7 +886,6 @@ function initModalEvents() {
         if (!title || !startTime || !endTime) return;
 
         if (id) {
-            // Edit existing timeblock
             const block = state.schedule.find(s => s.id === id);
             if (block) {
                 block.title = title;
@@ -832,7 +894,6 @@ function initModalEvents() {
                 block.color = color;
             }
         } else {
-            // Create new timeblock
             const newBlock = {
                 id: 'tb-' + Date.now(),
                 title,
@@ -846,7 +907,7 @@ function initModalEvents() {
         state.save();
         renderAll();
         timeblockModal.classList.remove('active');
-        showNotification(id ? 'Blok waktu berhasil diperbarui!' : 'Blok waktu baru berhasil ditambahkan!');
+        showNotification(id ? 'Jadwal berhasil diperbarui!' : 'Jadwal baru berhasil ditambahkan!');
     });
 }
 
