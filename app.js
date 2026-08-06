@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Live Clock & Greeting
+// Live Clock & Greeting (Updated to tick every 1000ms / 1 second in real-time)
 function initClock() {
     function updateClock() {
         const now = new Date();
@@ -213,7 +213,7 @@ function initClock() {
         updateGCalNowIndicator(now);
     }
     updateClock();
-    setInterval(updateClock, 10000);
+    setInterval(updateClock, 1000); // 1 second real-time clock
 }
 
 // Navigation Tabs
@@ -621,7 +621,6 @@ function restoreTimerState() {
     state.timer.duration = savedTimer.duration || 25 * 60;
     state.timer.linkedTaskId = savedTimer.linkedTaskId || '';
 
-    // Synchronize UI active mode buttons
     document.querySelectorAll('.timer-mode-btn').forEach(b => {
         b.classList.toggle('active', b.getAttribute('data-mode') === state.timer.mode);
     });
@@ -631,7 +630,6 @@ function restoreTimerState() {
         const remainingMs = savedTimer.targetEndTime - now;
 
         if (remainingMs <= 0) {
-            // Finished while app was closed or inactive
             state.timer.remaining = 0;
             state.timer.isRunning = false;
             state.timer.targetEndTime = null;
@@ -639,10 +637,9 @@ function restoreTimerState() {
             updateTimerUI();
             onTimerComplete();
         } else {
-            // Still running in real-time
             state.timer.targetEndTime = savedTimer.targetEndTime;
             state.timer.remaining = Math.ceil(remainingMs / 1000);
-            startTimer(false); // resume running timer without resetting targetEndTime
+            startTimer(false);
         }
     } else {
         state.timer.remaining = savedTimer.remaining !== undefined ? savedTimer.remaining : state.timer.duration;
@@ -691,7 +688,7 @@ function startTimer(isNewStart = true) {
     document.getElementById('timer-active-dot').classList.remove('hidden');
 
     clearInterval(state.timer.intervalId);
-    state.timer.intervalId = setInterval(tickTimer, 400); // 400ms tick for smooth wall-clock tracking
+    state.timer.intervalId = setInterval(tickTimer, 400);
 }
 
 function tickTimer() {
