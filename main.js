@@ -9,7 +9,7 @@ function createWindow() {
         height: 820,
         minWidth: 960,
         minHeight: 650,
-        title: "FlowPulse - Daily Work Assistant",
+        title: "ATUR.IN - Asisten Produktivitas & Manajemen Harian",
         autoHideMenuBar: true,
         backgroundColor: '#090d16',
         webPreferences: {
