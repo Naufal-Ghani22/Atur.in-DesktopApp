@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowPulse - Asisten Produktivitas & Manajemen Harian</title>
+    <!-- Font Family -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-bolt-lightning"></i>
+                </div>
+                <div class="brand-text">
+                    <h2>FlowPulse</h2>
+                    <span>Daily Work Assistant</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-tab="kanban">
+                    <i class="fa-solid fa-table-columns"></i>
+                    <span>Kanban Board</span>
+                    <span class="badge-count" id="badge-pending">0</span>
+                </button>
+                <button class="nav-item" data-tab="schedule">
+                    <i class="fa-solid fa-calendar-day"></i>
+                    <span>Jadwal Harian</span>
+                </button>
+                <button class="nav-item" data-tab="timer">
+                    <i class="fa-solid fa-stopwatch"></i>
+                    <span>Focus Timer</span>
+                    <span class="active-dot hidden" id="timer-active-dot"></span>
+                </button>
+                <button class="nav-item" data-tab="analytics">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Analisis Kinerja</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="quick-stats-card">
+                    <div class="qs-header">
+                        <i class="fa-solid fa-fire"></i>
+                        <span>Streak Produktivitas</span>
+                    </div>
+                    <div class="qs-value"><span id="streak-days">1</span> Hari</div>
+                    <div class="qs-progress-bar">
+                        <div class="qs-progress-fill" id="streak-progress-fill" style="width: 70%;"></div>
+                    </div>
+                </div>
+                <button class="btn-secondary btn-full" id="btn-seed-data" style="margin-top: 10px;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Muat Data Contoh
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="global-search" placeholder="Cari tugas, jadwal, atau tag...">
+                </div>
+
+                <div class="header-right">
+                    <div class="live-clock">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="current-time">00:00:00</span>
+                        <span class="date-badge" id="current-date">Senin, 1 Jan</span>
+                    </div>
+
+                    <button class="btn-primary" id="btn-open-task-modal">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Tugas Baru</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dynamic Views Container -->
+            <div class="view-content">
+
+                <!-- 1. DASHBOARD VIEW -->
+                <section id="view-dashboard" class="tab-view active">
+                    <div class="welcome-banner">
+                        <div class="welcome-text">
+                            <h1 id="greeting-title">Selamat Datang! 👋</h1>
+                            <p>Mari tingkatkan efisiensi dan selesaikan target kinerjamu hari ini.</p>
+                        </div>
+                        <div class="banner-quick-actions">
+                            <button class="btn-glass" onclick="switchTab('timer')">
+                                <i class="fa-solid fa-play"></i> Mulai Sesi Fokus
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Summary Grid -->
+                    <div class="metrics-grid">
+                        <div class="metric-card glass">
+                            <div class="metric-icon purple">
+                                <i class="fa-solid fa-list-check"></i>
+                            </div>
+                            <div class="metric-data">
+                                <span class="metric-label">Total Tugas Hari Ini</span>
+                                <h3 id="stat-total-tasks">0</h3>
+                                <span class="metric-sub" id="stat-completed-tasks">0 Selesai</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card glass">
+                            <div class="metric-icon blue">
+                                <i class="fa-solid fa-business-time"></i>
+                            </div>
+                            <div class="metric-data">
+                                <span class="metric-label">Waktu Fokus Hari Ini</span>
+                                <h3 id="stat-focus-time">0m</h3>
+                                <span class="metric-sub" id="stat-sessions-count">0 Sesi Selesai</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card glass">
+                            <div class="metric-icon green">
+                                <i class="fa-solid fa-bullseye"></i>
+                            </div>
+                            <div class="metric-data">
+                                <span class="metric-label">Tingkat Penyelesaian</span>
+                                <h3 id="stat-completion-rate">0%</h3>
+                                <span class="metric-sub">Target harian: 80%</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card glass">
+                            <div class="metric-icon amber">
+                                <i class="fa-solid fa-hourglass-half"></i>
+                            </div>
+                            <div class="metric-data">
+                                <span class="metric-label">Dalam Pengerjaan</span>
+                                <h3 id="stat-in-progress">0</h3>
+                                <span class="metric-sub">Prioritas tinggi dulu!</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Columns (Priority Tasks & Quick Timer & Upcoming Schedule) -->
+                    <div class="dashboard-columns">
+                        <!-- Priority Tasks Panel -->
+                        <div class="dashboard-card glass">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-star"></i> Tugas Prioritas Utama</h3>
+                                <button class="btn-link" onclick="switchTab('kanban')">Lihat Semua <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                            <div class="priority-task-list" id="dashboard-priority-list">
+                                <!-- Dynamic priority tasks -->
+                            </div>
+                        </div>
+
+                        <!-- Focus Widget & Today's Schedule Snapshot -->
+                        <div class="dashboard-side-cards">
+                            <!-- Quick Pomodoro Widget -->
+                            <div class="dashboard-card glass focus-widget-card">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-fire-burner"></i> Quick Focus</h3>
+                                    <span class="badge" id="quick-timer-status">Ready</span>
+                                </div>
+                                <div class="quick-timer-display">
+                                    <span id="quick-timer-clock">25:00</span>
+                                </div>
+                                <div class="quick-timer-controls">
+                                    <button class="btn-primary btn-sm" id="btn-quick-timer-toggle">
+                                        <i class="fa-solid fa-play" id="quick-timer-icon"></i> Start
+                                    </button>
+                                    <button class="btn-secondary btn-sm" onclick="switchTab('timer')">
+                                        Detail Timer
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Timeline Snapshot -->
+                            <div class="dashboard-card glass">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-clock-rotate-left"></i> Agenda Terdekat</h3>
+                                    <button class="btn-link" onclick="switchTab('schedule')">Atur Jadwal</button>
+                                </div>
+                                <div class="upcoming-agenda-list" id="dashboard-agenda-list">
+                                    <!-- Dynamic agenda items -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. KANBAN BOARD VIEW -->
+                <section id="view-kanban" class="tab-view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Kanban Board</h2>
+                            <p>Kelola alur kerja harianmu secara visual dan terstruktur.</p>
+                        </div>
+                        <div class="kanban-controls">
+                            <select id="filter-priority" class="select-input">
+                                <option value="all">Semua Prioritas</option>
+                                <option value="high">Tinggi 🔥</option>
+                                <option value="medium">Sedang ⚡</option>
+                                <option value="low">Rendah ☕</option>
+                            </select>
+                            <select id="filter-category" class="select-input">
+                                <option value="all">Semua Kategori</option>
+                                <option value="Work">Pekerjaan</option>
+                                <option value="Personal">Pribadi</option>
+                                <option value="Project">Proyek</option>
+                                <option value="Study">Belajar</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Kanban Columns -->
+                    <div class="kanban-board">
+                        <!-- Column: To Do -->
+                        <div class="kanban-column" data-status="todo">
+                            <div class="column-header todo">
+                                <div class="col-title">
+                                    <span class="status-indicator todo"></span>
+                                    <h3>Rencana (To Do)</h3>
+                                </div>
+                                <span class="col-count" id="count-todo">0</span>
+                            </div>
+                            <div class="task-list" id="col-todo" data-status="todo">
+                                <!-- Cards injected dynamically -->
+                            </div>
+                            <button class="btn-add-inline" onclick="openAddTaskModal('todo')">
+                                <i class="fa-solid fa-plus"></i> Tambah Tugas
+                            </button>
+                        </div>
+
+                        <!-- Column: In Progress -->
+                        <div class="kanban-column" data-status="in-progress">
+                            <div class="column-header in-progress">
+                                <div class="col-title">
+                                    <span class="status-indicator in-progress"></span>
+                                    <h3>Sedang Dikerjakan</h3>
+                                </div>
+                                <span class="col-count" id="count-in-progress">0</span>
+                            </div>
+                            <div class="task-list" id="col-in-progress" data-status="in-progress">
+                                <!-- Cards injected dynamically -->
+                            </div>
+                            <button class="btn-add-inline" onclick="openAddTaskModal('in-progress')">
+                                <i class="fa-solid fa-plus"></i> Tambah Tugas
+                            </button>
+                        </div>
+
+                        <!-- Column: Review -->
+                        <div class="kanban-column" data-status="review">
+                            <div class="column-header review">
+                                <div class="col-title">
+                                    <span class="status-indicator review"></span>
+                                    <h3>Peninjauan (Review)</h3>
+                                </div>
+                                <span class="col-count" id="count-review">0</span>
+                            </div>
+                            <div class="task-list" id="col-review" data-status="review">
+                                <!-- Cards injected dynamically -->
+                            </div>
+                            <button class="btn-add-inline" onclick="openAddTaskModal('review')">
+                                <i class="fa-solid fa-plus"></i> Tambah Tugas
+                            </button>
+                        </div>
+
+                        <!-- Column: Done -->
+                        <div class="kanban-column" data-status="done">
+                            <div class="column-header done">
+                                <div class="col-title">
+                                    <span class="status-indicator done"></span>
+                                    <h3>Selesai 🎉</h3>
+                                </div>
+                                <span class="col-count" id="count-done">0</span>
+                            </div>
+                            <div class="task-list" id="col-done" data-status="done">
+                                <!-- Cards injected dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. DAILY SCHEDULE VIEW -->
+                <section id="view-schedule" class="tab-view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Jadwal & Time Blocker Harian</h2>
+                            <p>Alokasikan blok waktu terbaik untuk meminimalisir distraksi.</p>
+                        </div>
+                        <button class="btn-secondary" id="btn-add-timeblock">
+                            <i class="fa-solid fa-clock"></i> Tambah Blok Waktu
+                        </button>
+                    </div>
+
+                    <div class="schedule-container glass">
+                        <div class="timeline-header">
+                            <span class="time-col">Waktu</span>
+                            <span class="activity-col">Aktivitas & Alokasi Tugas</span>
+                        </div>
+                        <div class="timeline-body" id="timeline-slots">
+                            <!-- 24-Hour Timeline Generated via JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. FOCUS TIMER VIEW -->
+                <section id="view-timer" class="tab-view">
+                    <div class="timer-wrapper glass">
+                        <div class="timer-mode-selector">
+                            <button class="timer-mode-btn active" data-mode="focus">Focus (25m)</button>
+                            <button class="timer-mode-btn" data-mode="shortBreak">Short Break (5m)</button>
+                            <button class="timer-mode-btn" data-mode="longBreak">Long Break (15m)</button>
+                        </div>
+
+                        <!-- Circular Timer Display -->
+                        <div class="timer-circle-container">
+                            <svg class="timer-svg" viewBox="0 0 200 200">
+                                <circle class="timer-bg-circle" cx="100" cy="100" r="88" />
+                                <circle class="timer-progress-circle" id="timer-progress-bar" cx="100" cy="100" r="88" />
+                            </svg>
+                            <div class="timer-content">
+                                <span class="timer-task-label" id="timer-linked-task">Tidak ada tugas terpilih</span>
+                                <h1 class="timer-time" id="timer-clock">25:00</h1>
+                                <span class="timer-status-badge" id="timer-mode-label">Mode Fokus</span>
+                            </div>
+                        </div>
+
+                        <!-- Timer Controls -->
+                        <div class="timer-actions">
+                            <button class="btn-timer btn-timer-main" id="btn-timer-toggle">
+                                <i class="fa-solid fa-play" id="main-timer-icon"></i>
+                                <span id="main-timer-btn-text">Mulai Fokus</span>
+                            </button>
+                            <button class="btn-timer btn-timer-sub" id="btn-timer-reset">
+                                <i class="fa-solid fa-rotate-left"></i> Reset
+                            </button>
+                            <button class="btn-timer btn-timer-sub" id="btn-timer-skip">
+                                <i class="fa-solid fa-forward"></i> Skip
+                            </button>
+                        </div>
+
+                        <!-- Associated Task Selector -->
+                        <div class="timer-task-selector">
+                            <label for="timer-select-task"><i class="fa-solid fa-link"></i> Hubungkan dengan Tugas Kanban:</label>
+                            <select id="timer-select-task" class="select-input">
+                                <option value="">-- Pilih Tugas untuk Dikerjakan --</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. ANALYTICS VIEW -->
+                <section id="view-analytics" class="tab-view">
+                    <div class="view-header">
+                        <div>
+                            <h2>Analisis Kinerja & Produktivitas</h2>
+                            <p>Evaluasi pencapaian kerja dan statistik waktu yang telah dihabiskan.</p>
+                        </div>
+                    </div>
+
+                    <div class="analytics-grid">
+                        <div class="analytics-card glass">
+                            <h3><i class="fa-solid fa-chart-bar"></i> Distribusi Status Tugas</h3>
+                            <div class="chart-container">
+                                <div class="bar-chart-mock" id="status-distribution-bars">
+                                    <!-- Dynamic bars -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="analytics-card glass">
+                            <h3><i class="fa-solid fa-clock"></i> Riwayat Waktu Fokus</h3>
+                            <div class="focus-history-list" id="focus-history-log">
+                                <!-- Dynamic logs -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: ADD / EDIT TASK -->
+    <div class="modal-overlay" id="task-modal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3 id="task-modal-title">Tambah Tugas Baru</h3>
+                <button class="modal-close" id="btn-close-task-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="task-form">
+                <input type="hidden" id="task-id">
+                <div class="form-group">
+                    <label for="task-title">Judul Tugas *</label>
+                    <input type="text" id="task-title" required placeholder="Misal: Menyusun laporan kinerja mingguan">
+                </div>
+
+                <div class="form-group">
+                    <label for="task-desc">Deskripsi & Catatan</label>
+                    <textarea id="task-desc" rows="3" placeholder="Rincian sub-tugas atau tautan penting..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task-status">Status Column</label>
+                        <select id="task-status" class="select-input">
+                            <option value="todo">Rencana (To Do)</option>
+                            <option value="in-progress">Sedang Dikerjakan</option>
+                            <option value="review">Peninjauan (Review)</option>
+                            <option value="done">Selesai</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="task-priority">Prioritas *</label>
+                        <select id="task-priority" class="select-input">
+                            <option value="high">Tinggi 🔥</option>
+                            <option value="medium" selected>Sedang ⚡</option>
+                            <option value="low">Rendah ☕</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task-category">Kategori</label>
+                        <select id="task-category" class="select-input">
+                            <option value="Work">Pekerjaan</option>
+                            <option value="Project">Proyek</option>
+                            <option value="Personal">Pribadi</option>
+                            <option value="Study">Belajar</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="task-est-time">Estimasi (Menit)</label>
+                        <input type="number" id="task-est-time" min="5" step="5" value="30">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="btn-cancel-task">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan Tugas</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD TIME BLOCK -->
+    <div class="modal-overlay" id="timeblock-modal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3>Tambah Blok Waktu Jadwal</h3>
+                <button class="modal-close" id="btn-close-timeblock-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="timeblock-form">
+                <div class="form-group">
+                    <label for="tb-hour">Jam (00:00 - 23:00)</label>
+                    <select id="tb-hour" class="select-input"></select>
+                </div>
+                <div class="form-group">
+                    <label for="tb-title">Aktivitas / Nama Blok</label>
+                    <input type="text" id="tb-title" required placeholder="Misal: Deep Work Sesi 1 / Meeting Tim">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="btn-cancel-timeblock">Batal</button>
+                    <button type="submit" class="btn-primary">Tambah ke Jadwal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

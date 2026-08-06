@@ -1,0 +1,22 @@
+{
+  "name": "flowpulse-desktop",
+  "version": "1.0.0",
+  "description": "FlowPulse - Daily Work Assistant & Productivity Desktop App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "productivity",
+    "kanban",
+    "pomodoro",
+    "electron",
+    "desktop"
+  ],
+  "author": "Antigravity AI",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}
