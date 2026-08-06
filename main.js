@@ -21,8 +21,24 @@ function createWindow() {
 
     mainWindow.loadFile('index.html');
 
-    // Remove default top menu for a sleek app feel
-    Menu.setApplicationMenu(null);
+    // Build standard Edit menu so keyboard inputs (Undo, Redo, Cut, Copy, Paste, Select All) work natively
+    const template = [
+        {
+            label: 'Edit',
+            submenu: [
+                { role: 'undo' },
+                { role: 'redo' },
+                { type: 'separator' },
+                { role: 'cut' },
+                { role: 'copy' },
+                { role: 'paste' },
+                { role: 'selectAll' }
+            ]
+        }
+    ];
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+    mainWindow.setMenuBarVisibility(false);
 
     mainWindow.on('closed', () => {
         mainWindow = null;

@@ -72,6 +72,13 @@ body {
     overflow: hidden;
 }
 
+/* Ensure inputs, textareas, and selects allow native typing and text selection */
+input, textarea, select {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    pointer-events: auto !important;
+}
+
 /* Scrollbar Customization */
 ::-webkit-scrollbar {
     width: 6px;
@@ -1200,7 +1207,7 @@ body {
 }
 
 .bar-track {
-    height: 10px;
+    height: 100%;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 5px;
     overflow: hidden;
