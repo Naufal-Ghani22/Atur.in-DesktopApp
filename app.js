@@ -71,11 +71,13 @@ class AppState {
         ];
         this.streakDays = parseInt(localStorage.getItem('fp_streak')) || 3;
 
+        // Robust Timestamp-Based Timer State
         this.timer = {
-            mode: 'focus',
-            duration: 25 * 60,
+            mode: 'focus', // 'focus', 'shortBreak', 'longBreak'
+            duration: 25 * 60, // in seconds
             remaining: 25 * 60,
             isRunning: false,
+            targetEndTime: null, // Wall-clock timestamp (Date.now())
             intervalId: null,
             linkedTaskId: ''
         };
@@ -107,6 +109,19 @@ class AppState {
         localStorage.setItem('fp_schedule', JSON.stringify(this.schedule));
         localStorage.setItem('fp_focus_logs', JSON.stringify(this.focusLogs));
         localStorage.setItem('fp_streak', this.streakDays.toString());
+        this.saveTimerState();
+    }
+
+    saveTimerState() {
+        const timerData = {
+            mode: this.timer.mode,
+            duration: this.timer.duration,
+            remaining: this.timer.remaining,
+            isRunning: this.timer.isRunning,
+            targetEndTime: this.timer.targetEndTime,
+            linkedTaskId: this.timer.linkedTaskId
+        };
+        localStorage.setItem('fp_timer_state', JSON.stringify(timerData));
     }
 
     resetToDemo() {
@@ -155,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initModalEvents();
     initTimerEvents();
     initGlobalSearch();
+    restoreTimerState();
     renderAll();
 
     const todayBtn = document.getElementById('btn-gcal-today');
@@ -194,7 +210,6 @@ function initClock() {
         const greetingElem = document.getElementById('greeting-title');
         if (greetingElem) greetingElem.textContent = greeting;
 
-        // Update Google Calendar Now Red Line
         updateGCalNowIndicator(now);
     }
     updateClock();
@@ -443,17 +458,14 @@ function renderScheduleTimeline() {
     gridRows.innerHTML = '';
     overlay.innerHTML = '';
 
-    // Render 18 hour slots (06:00 to 23:00)
     for (let h = START_HOUR; h <= END_HOUR; h++) {
         const hourFormatted = `${h < 10 ? '0' : ''}${h}:00`;
 
-        // Time Column Label
         const label = document.createElement('div');
         label.className = 'gcal-hour-label';
         label.textContent = hourFormatted;
         timeCol.appendChild(label);
 
-        // Grid Row Line
         const row = document.createElement('div');
         row.className = 'gcal-hour-row';
         row.dataset.hour = h;
@@ -467,12 +479,10 @@ function renderScheduleTimeline() {
         gridRows.appendChild(row);
     }
 
-    // Render Event Cards positioned absolutely on grid
     state.schedule.forEach(item => {
         const [startH, startM] = item.startTime.split(':').map(Number);
         const [endH, endM] = item.endTime.split(':').map(Number);
 
-        // Calculate Y-Position & Height
         const startTotalHours = (startH - START_HOUR) + (startM / 60);
         const endTotalHours = (endH - START_HOUR) + (endM / 60);
 
@@ -480,7 +490,7 @@ function renderScheduleTimeline() {
 
         const topPos = startTotalHours * ROW_HEIGHT;
         let heightVal = (endTotalHours - startTotalHours) * ROW_HEIGHT;
-        if (heightVal < 36) heightVal = 36; // Min height for short events
+        if (heightVal < 36) heightVal = 36;
 
         const colorClass = item.color || 'indigo';
 
@@ -509,7 +519,6 @@ function renderScheduleTimeline() {
         overlay.appendChild(card);
     });
 
-    // Update current time indicator line
     updateGCalNowIndicator(new Date());
 }
 
@@ -577,7 +586,7 @@ function deleteTimeblock(timeblockId) {
     }
 }
 
-// FOCUS POMODORO TIMER ENGINE
+// ROBUST TIMESTAMP-BASED POMODORO TIMER ENGINE
 function initTimerEvents() {
     const toggleBtn = document.getElementById('btn-timer-toggle');
     const resetBtn = document.getElementById('btn-timer-reset');
@@ -600,10 +609,51 @@ function initTimerEvents() {
         state.timer.linkedTaskId = e.target.value;
         const task = state.tasks.find(t => t.id === e.target.value);
         document.getElementById('timer-linked-task').textContent = task ? task.title : 'Tidak ada tugas terpilih';
+        state.saveTimerState();
     });
 }
 
+function restoreTimerState() {
+    const savedTimer = JSON.parse(localStorage.getItem('fp_timer_state'));
+    if (!savedTimer) return;
+
+    state.timer.mode = savedTimer.mode || 'focus';
+    state.timer.duration = savedTimer.duration || 25 * 60;
+    state.timer.linkedTaskId = savedTimer.linkedTaskId || '';
+
+    // Synchronize UI active mode buttons
+    document.querySelectorAll('.timer-mode-btn').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-mode') === state.timer.mode);
+    });
+
+    if (savedTimer.isRunning && savedTimer.targetEndTime) {
+        const now = Date.now();
+        const remainingMs = savedTimer.targetEndTime - now;
+
+        if (remainingMs <= 0) {
+            // Finished while app was closed or inactive
+            state.timer.remaining = 0;
+            state.timer.isRunning = false;
+            state.timer.targetEndTime = null;
+            state.saveTimerState();
+            updateTimerUI();
+            onTimerComplete();
+        } else {
+            // Still running in real-time
+            state.timer.targetEndTime = savedTimer.targetEndTime;
+            state.timer.remaining = Math.ceil(remainingMs / 1000);
+            startTimer(false); // resume running timer without resetting targetEndTime
+        }
+    } else {
+        state.timer.remaining = savedTimer.remaining !== undefined ? savedTimer.remaining : state.timer.duration;
+        state.timer.isRunning = false;
+        state.timer.targetEndTime = null;
+        updateTimerUI();
+    }
+}
+
 function setTimerMode(mode) {
+    pauseTimer();
     state.timer.mode = mode;
     document.querySelectorAll('.timer-mode-btn').forEach(b => {
         b.classList.toggle('active', b.getAttribute('data-mode') === mode);
@@ -625,29 +675,59 @@ function toggleTimer() {
     if (state.timer.isRunning) {
         pauseTimer();
     } else {
-        startTimer();
+        startTimer(true);
     }
 }
 
-function startTimer() {
+function startTimer(isNewStart = true) {
+    if (isNewStart || !state.timer.targetEndTime) {
+        state.timer.targetEndTime = Date.now() + (state.timer.remaining * 1000);
+    }
+
     state.timer.isRunning = true;
+    state.saveTimerState();
     updateTimerUI();
 
     document.getElementById('timer-active-dot').classList.remove('hidden');
 
-    state.timer.intervalId = setInterval(() => {
-        if (state.timer.remaining > 0) {
-            state.timer.remaining--;
+    clearInterval(state.timer.intervalId);
+    state.timer.intervalId = setInterval(tickTimer, 400); // 400ms tick for smooth wall-clock tracking
+}
+
+function tickTimer() {
+    if (!state.timer.isRunning || !state.timer.targetEndTime) return;
+
+    const now = Date.now();
+    const remainingMs = state.timer.targetEndTime - now;
+
+    if (remainingMs <= 0) {
+        state.timer.remaining = 0;
+        state.timer.targetEndTime = null;
+        state.timer.isRunning = false;
+        clearInterval(state.timer.intervalId);
+        state.saveTimerState();
+        updateTimerUI();
+        onTimerComplete();
+    } else {
+        const newRemainingSec = Math.ceil(remainingMs / 1000);
+        if (newRemainingSec !== state.timer.remaining) {
+            state.timer.remaining = newRemainingSec;
             updateTimerUI();
-        } else {
-            onTimerComplete();
         }
-    }, 1000);
+    }
 }
 
 function pauseTimer() {
     state.timer.isRunning = false;
     clearInterval(state.timer.intervalId);
+
+    if (state.timer.targetEndTime) {
+        const remainingMs = Math.max(0, state.timer.targetEndTime - Date.now());
+        state.timer.remaining = Math.ceil(remainingMs / 1000);
+        state.timer.targetEndTime = null;
+    }
+
+    state.saveTimerState();
     updateTimerUI();
     document.getElementById('timer-active-dot').classList.add('hidden');
 }
@@ -655,6 +735,8 @@ function pauseTimer() {
 function resetTimer() {
     pauseTimer();
     state.timer.remaining = state.timer.duration;
+    state.timer.targetEndTime = null;
+    state.saveTimerState();
     updateTimerUI();
 }
 
@@ -743,7 +825,7 @@ function startTimerForTask(taskId) {
 
     switchTab('timer');
     setTimerMode('focus');
-    startTimer();
+    startTimer(true);
 }
 
 function updateTimerTaskDropdown() {
