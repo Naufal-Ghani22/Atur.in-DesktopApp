@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FlowPulse - Asisten Produktivitas & Manajemen Harian
+   ATUR.IN - Asisten Produktivitas & Manajemen Harian
    JavaScript Application Engine
    ========================================================================== */
 
@@ -48,18 +48,22 @@ const INITIAL_TASKS = [
 ];
 
 const INITIAL_SCHEDULE = [
-    { hour: 8, title: 'Morning Coffee & Review To-Do List' },
-    { hour: 9, title: 'Deep Work Sesi 1: Coding & Task Execution' },
-    { hour: 11, title: 'Meeting Koordinasi Tim' },
-    { hour: 13, title: 'Istirahat & Makan Siang' },
-    { hour: 14, title: 'Deep Work Sesi 2: Review Proposal' }
+    { id: 'tb-1', startTime: '08:00', endTime: '08:30', title: 'Morning Coffee & Review To-Do List', color: 'amber' },
+    { id: 'tb-2', startTime: '09:00', endTime: '11:30', title: 'Deep Work Sesi 1: Coding & Task Execution', color: 'indigo' },
+    { id: 'tb-3', startTime: '11:30', endTime: '12:30', title: 'Meeting Koordinasi Tim', color: 'blue' },
+    { id: 'tb-4', startTime: '12:30', endTime: '13:30', title: 'Istirahat & Makan Siang', color: 'emerald' },
+    { id: 'tb-5', startTime: '14:00', endTime: '16:30', title: 'Deep Work Sesi 2: Review Proposal', color: 'rose' }
 ];
 
 // App State Manager
 class AppState {
     constructor() {
         this.tasks = JSON.parse(localStorage.getItem('fp_tasks')) || INITIAL_TASKS;
-        this.schedule = JSON.parse(localStorage.getItem('fp_schedule')) || INITIAL_SCHEDULE;
+        
+        // Migrate or load schedule
+        const rawSchedule = JSON.parse(localStorage.getItem('fp_schedule'));
+        this.schedule = this.migrateSchedule(rawSchedule);
+        
         this.focusLogs = JSON.parse(localStorage.getItem('fp_focus_logs')) || [
             { date: new Date().toLocaleDateString('id-ID'), minutes: 25, taskTitle: 'Menyusun Laporan Kinerja Mingguan' }
         ];
@@ -74,6 +78,28 @@ class AppState {
             intervalId: null,
             linkedTaskId: ''
         };
+    }
+
+    migrateSchedule(rawSchedule) {
+        if (!rawSchedule || !Array.isArray(rawSchedule) || rawSchedule.length === 0) {
+            return INITIAL_SCHEDULE;
+        }
+
+        return rawSchedule.map((item, idx) => {
+            if (item.startTime && item.endTime) return item;
+            
+            // Legacy migration from { hour, title }
+            const h = item.hour || 9;
+            const startStr = `${h < 10 ? '0' : ''}${h}:00`;
+            const endStr = `${(h + 1) < 10 ? '0' : ''}${h + 1}:00`;
+            return {
+                id: 'tb-' + Date.now() + '-' + idx,
+                startTime: startStr,
+                endTime: endStr,
+                title: item.title || 'Aktivitas Harian',
+                color: 'indigo'
+            };
+        });
     }
 
     save() {
@@ -105,8 +131,8 @@ function playNotificationSound() {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 note
-        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5 note
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3);
 
         gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
@@ -121,7 +147,7 @@ function playNotificationSound() {
     }
 }
 
-// DOM Elements
+// DOM Initialization
 document.addEventListener('DOMContentLoaded', () => {
     initClock();
     initNavigation();
@@ -150,9 +176,8 @@ function initClock() {
         document.getElementById('current-time').textContent = timeStr;
         document.getElementById('current-date').textContent = dateStr;
 
-        // Dynamic Greeting
         const hour = now.getHours();
-        let greeting = 'Selamat Datang! 👋';
+        let greeting = 'Selamat Datang di ATUR.IN! 👋';
         if (hour >= 4 && hour < 11) greeting = 'Selamat Pagi! 🌅';
         else if (hour >= 11 && hour < 15) greeting = 'Selamat Siang! ☀️';
         else if (hour >= 15 && hour < 18) greeting = 'Selamat Sore! ☕';
@@ -186,7 +211,6 @@ function switchTab(tabId) {
     if (activeNav) activeNav.classList.add('active');
     if (activeView) activeView.classList.add('active');
 
-    // Refresh view specific components
     if (tabId === 'schedule') renderScheduleTimeline();
     if (tabId === 'analytics') renderAnalytics();
     if (tabId === 'timer') updateTimerTaskDropdown();
@@ -223,13 +247,10 @@ function renderKanban() {
         done: document.getElementById('col-done')
     };
 
-    // Reset columns
     Object.values(columns).forEach(col => col.innerHTML = '');
-
     const counts = { todo: 0, 'in-progress': 0, review: 0, done: 0 };
 
     state.tasks.forEach(task => {
-        // Filter logic
         if (filterPrio !== 'all' && task.priority !== filterPrio) return;
         if (filterCat !== 'all' && task.category !== filterCat) return;
         if (searchQuery && !task.title.toLowerCase().includes(searchQuery) && !(task.desc || '').toLowerCase().includes(searchQuery)) return;
@@ -266,7 +287,6 @@ function renderKanban() {
             </div>
         `;
 
-        // Drag events
         card.addEventListener('dragstart', (e) => {
             card.classList.add('dragging');
             e.dataTransfer.setData('text/plain', task.id);
@@ -281,12 +301,10 @@ function renderKanban() {
         }
     });
 
-    // Update Counts
     document.getElementById('count-todo').textContent = counts.todo;
     document.getElementById('count-in-progress').textContent = counts['in-progress'];
     document.getElementById('count-review').textContent = counts.review;
     document.getElementById('count-done').textContent = counts.done;
-
     document.getElementById('badge-pending').textContent = counts.todo + counts['in-progress'];
 }
 
@@ -329,7 +347,6 @@ function renderDashboardMetrics() {
     const completed = state.tasks.filter(t => t.status === 'done').length;
     const inProgress = state.tasks.filter(t => t.status === 'in-progress').length;
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
-
     const todayFocus = state.focusLogs.reduce((acc, log) => acc + log.minutes, 0);
 
     document.getElementById('stat-total-tasks').textContent = total;
@@ -382,7 +399,7 @@ function renderDashboardUpcomingAgenda() {
     const container = document.getElementById('dashboard-agenda-list');
     container.innerHTML = '';
 
-    const sortedSchedule = [...state.schedule].sort((a, b) => a.hour - b.hour).slice(0, 4);
+    const sortedSchedule = [...state.schedule].sort((a, b) => a.startTime.localeCompare(b.startTime)).slice(0, 4);
 
     if (sortedSchedule.length === 0) {
         container.innerHTML = `<p style="font-size: 12px; color: var(--text-dim); text-align: center;">Belum ada agenda hari ini.</p>`;
@@ -390,66 +407,111 @@ function renderDashboardUpcomingAgenda() {
     }
 
     sortedSchedule.forEach(slot => {
-        const hourFormatted = `${slot.hour < 10 ? '0' : ''}${slot.hour}:00`;
         const item = document.createElement('div');
         item.className = 'agenda-item';
         item.innerHTML = `
-            <span class="agenda-time">${hourFormatted}</span>
+            <span class="agenda-time">${slot.startTime} - ${slot.endTime}</span>
             <span class="agenda-text">${escapeHtml(slot.title)}</span>
         `;
         container.appendChild(item);
     });
 }
 
-// DAILY SCHEDULE TIMELINE
+// DAILY SCHEDULE TIMELINE & DURATION COMPUTATION
+function calculateDurationText(startTime, endTime) {
+    const [startH, startM] = startTime.split(':').map(Number);
+    const [endH, endM] = endTime.split(':').map(Number);
+
+    const startTotal = startH * 60 + startM;
+    const endTotal = endH * 60 + endM;
+
+    let diff = endTotal - startTotal;
+    if (diff <= 0) diff += 24 * 60; // crossover midnight fallback
+
+    const hours = Math.floor(diff / 60);
+    const mins = diff % 60;
+
+    if (hours > 0 && mins > 0) return `${hours} jam ${mins}m`;
+    if (hours > 0) return `${hours} jam`;
+    return `${mins}m`;
+}
+
 function renderScheduleTimeline() {
     const container = document.getElementById('timeline-slots');
     if (!container) return;
     container.innerHTML = '';
 
-    const currentHour = new Date().getHours();
+    const sortedSchedule = [...state.schedule].sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-    for (let h = 7; h <= 21; h++) {
-        const slot = document.createElement('div');
-        slot.className = `timeline-slot ${h === currentHour ? 'current-hour' : ''}`;
-
-        const hourFormatted = `${h < 10 ? '0' : ''}${h}:00`;
-        const existingBlock = state.schedule.find(s => s.hour === h);
-
-        slot.innerHTML = `
-            <div class="slot-time">${hourFormatted}</div>
-            <div class="slot-content">
-                ${existingBlock ? `
-                    <div class="slot-block">
-                        <span><i class="fa-solid fa-circle-dot" style="color: var(--accent-primary); font-size: 10px;"></i> ${escapeHtml(existingBlock.title)}</span>
-                        <button class="card-action-btn delete" onclick="deleteTimeblock(${h})"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                ` : `
-                    <button class="btn-link" onclick="openAddTimeblockModal(${h})">+ Tambah Aktivitas</button>
-                `}
+    if (sortedSchedule.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <i class="fa-solid fa-calendar-xmark" style="font-size: 32px; color: var(--text-dim); margin-bottom: 12px;"></i>
+                <p>Belum ada blok waktu aktivitas harian. Klik tombol <strong>+ Tambah Blok Waktu</strong> di atas!</p>
             </div>
         `;
-        container.appendChild(slot);
+        return;
     }
+
+    sortedSchedule.forEach(item => {
+        const card = document.createElement('div');
+        const colorClass = item.color || 'indigo';
+        card.className = `timeblock-card ${colorClass}`;
+
+        const durationStr = calculateDurationText(item.startTime, item.endTime);
+
+        card.innerHTML = `
+            <div class="tb-time-range">
+                <span class="tb-time-text">${item.startTime} - ${item.endTime}</span>
+                <span class="tb-duration-badge"><i class="fa-regular fa-clock"></i> ${durationStr}</span>
+            </div>
+            <div class="tb-content">
+                <span class="tb-title">${escapeHtml(item.title)}</span>
+                <div class="tb-actions">
+                    <button class="card-action-btn" onclick="editTimeblock('${item.id}')" title="Edit Jam/Aktivitas">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="card-action-btn delete" onclick="deleteTimeblock('${item.id}')" title="Hapus Blok">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
 }
 
-function openAddTimeblockModal(hour) {
-    const hourSelect = document.getElementById('tb-hour');
-    hourSelect.innerHTML = '';
-    for (let h = 0; h < 24; h++) {
-        const opt = document.createElement('option');
-        opt.value = h;
-        opt.textContent = `${h < 10 ? '0' : ''}${h}:00`;
-        if (h === hour) opt.selected = true;
-        hourSelect.appendChild(opt);
-    }
+function openAddTimeblockModal() {
+    document.getElementById('timeblock-form').reset();
+    document.getElementById('tb-id').value = '';
+    document.getElementById('tb-start-time').value = '09:00';
+    document.getElementById('tb-end-time').value = '10:30';
+    document.getElementById('timeblock-modal-title').textContent = 'Tambah Blok Waktu Jadwal';
     document.getElementById('timeblock-modal').classList.add('active');
 }
 
-function deleteTimeblock(hour) {
-    state.schedule = state.schedule.filter(s => s.hour !== hour);
-    state.save();
-    renderAll();
+function editTimeblock(timeblockId) {
+    const item = state.schedule.find(s => s.id === timeblockId);
+    if (!item) return;
+
+    document.getElementById('tb-id').value = item.id;
+    document.getElementById('tb-title').value = item.title;
+    document.getElementById('tb-start-time').value = item.startTime;
+    document.getElementById('tb-end-time').value = item.endTime;
+    document.getElementById('tb-color').value = item.color || 'indigo';
+
+    document.getElementById('timeblock-modal-title').textContent = 'Edit Blok Waktu Jadwal';
+    document.getElementById('timeblock-modal').classList.add('active');
+}
+
+function deleteTimeblock(timeblockId) {
+    if (confirm('Apakah Anda yakin ingin menghapus blok waktu ini?')) {
+        state.schedule = state.schedule.filter(s => s.id !== timeblockId);
+        state.save();
+        renderAll();
+        showNotification('Blok jadwal berhasil dihapus.');
+    }
 }
 
 // FOCUS POMODORO TIMER ENGINE
@@ -464,7 +526,6 @@ function initTimerEvents() {
     resetBtn.addEventListener('click', resetTimer);
     skipBtn.addEventListener('click', skipTimerMode);
 
-    // Mode switch buttons
     document.querySelectorAll('.timer-mode-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const mode = btn.getAttribute('data-mode');
@@ -472,7 +533,6 @@ function initTimerEvents() {
         });
     });
 
-    // Linked Task Change
     document.getElementById('timer-select-task').addEventListener('change', (e) => {
         state.timer.linkedTaskId = e.target.value;
         const task = state.tasks.find(t => t.id === e.target.value);
@@ -552,7 +612,6 @@ function onTimerComplete() {
             const task = state.tasks.find(t => t.id === state.timer.linkedTaskId);
             if (task) {
                 taskTitle = task.title;
-                // Move task status to in-progress if it was todo
                 if (task.status === 'todo') {
                     task.status = 'in-progress';
                 }
@@ -585,7 +644,6 @@ function updateTimerUI() {
     const quickTimerClock = document.getElementById('quick-timer-clock');
     if (quickTimerClock) quickTimerClock.textContent = timeFormatted;
 
-    // Toggle button icons & text
     const mainIcon = document.getElementById('main-timer-icon');
     const mainBtnText = document.getElementById('main-timer-btn-text');
     const quickIcon = document.getElementById('quick-timer-icon');
@@ -603,7 +661,6 @@ function updateTimerUI() {
         if (quickStatus) quickStatus.textContent = 'Ready';
     }
 
-    // Circular Progress Offset Calculation
     const progressCircle = document.getElementById('timer-progress-bar');
     if (progressCircle) {
         const total = state.timer.duration;
@@ -642,7 +699,6 @@ function updateTimerTaskDropdown() {
 
 // ANALYTICS CONTROLLER
 function renderAnalytics() {
-    // Render Bar Chart for Status Distribution
     const barsContainer = document.getElementById('status-distribution-bars');
     if (!barsContainer) return;
     barsContainer.innerHTML = '';
@@ -674,7 +730,6 @@ function renderAnalytics() {
         barsContainer.appendChild(group);
     });
 
-    // Render Focus History Logs
     const logContainer = document.getElementById('focus-history-log');
     if (!logContainer) return;
     logContainer.innerHTML = '';
@@ -698,24 +753,27 @@ function renderAnalytics() {
     });
 }
 
-// TASK CRUD MODAL CONTROLLER
+// TASK & TIMEBLOCK MODAL CONTROLLER
 function initModalEvents() {
     const taskModal = document.getElementById('task-modal');
     const timeblockModal = document.getElementById('timeblock-modal');
     const openTaskBtn = document.getElementById('btn-open-task-modal');
+    const openTimeblockBtn = document.getElementById('btn-add-timeblock');
     const closeTaskBtn = document.getElementById('btn-close-task-modal');
     const cancelTaskBtn = document.getElementById('btn-cancel-task');
     const closeTbBtn = document.getElementById('btn-close-timeblock-modal');
     const cancelTbBtn = document.getElementById('btn-cancel-timeblock');
 
     openTaskBtn.addEventListener('click', () => openAddTaskModal('todo'));
+    openTimeblockBtn.addEventListener('click', openAddTimeblockModal);
+    
     closeTaskBtn.addEventListener('click', () => taskModal.classList.remove('active'));
     cancelTaskBtn.addEventListener('click', () => taskModal.classList.remove('active'));
 
     closeTbBtn.addEventListener('click', () => timeblockModal.classList.remove('active'));
     cancelTbBtn.addEventListener('click', () => timeblockModal.classList.remove('active'));
 
-    // Handle Task Form Submit
+    // Task Form Submit
     document.getElementById('task-form').addEventListener('submit', (e) => {
         e.preventDefault();
         const id = document.getElementById('task-id').value;
@@ -729,7 +787,6 @@ function initModalEvents() {
         if (!title) return;
 
         if (id) {
-            // Edit existing
             const task = state.tasks.find(t => t.id === id);
             if (task) {
                 task.title = title;
@@ -740,7 +797,6 @@ function initModalEvents() {
                 task.estTime = estTime;
             }
         } else {
-            // Create new
             const newTask = {
                 id: 'task-' + Date.now(),
                 title, desc, status, priority, category, estTime,
@@ -755,22 +811,42 @@ function initModalEvents() {
         showNotification(id ? 'Tugas berhasil diperbarui!' : 'Tugas baru berhasil ditambahkan!');
     });
 
-    // Handle Timeblock Form Submit
+    // Timeblock Form Submit (Custom Start Time & End Time)
     document.getElementById('timeblock-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const hour = parseInt(document.getElementById('tb-hour').value);
+        const id = document.getElementById('tb-id').value;
         const title = document.getElementById('tb-title').value.trim();
+        const startTime = document.getElementById('tb-start-time').value;
+        const endTime = document.getElementById('tb-end-time').value;
+        const color = document.getElementById('tb-color').value;
 
-        if (!title) return;
+        if (!title || !startTime || !endTime) return;
 
-        // Remove existing block at this hour
-        state.schedule = state.schedule.filter(s => s.hour !== hour);
-        state.schedule.push({ hour, title });
+        if (id) {
+            // Edit existing timeblock
+            const block = state.schedule.find(s => s.id === id);
+            if (block) {
+                block.title = title;
+                block.startTime = startTime;
+                block.endTime = endTime;
+                block.color = color;
+            }
+        } else {
+            // Create new timeblock
+            const newBlock = {
+                id: 'tb-' + Date.now(),
+                title,
+                startTime,
+                endTime,
+                color
+            };
+            state.schedule.push(newBlock);
+        }
 
         state.save();
         renderAll();
         timeblockModal.classList.remove('active');
-        showNotification('Blok jadwal berhasil ditambahkan!');
+        showNotification(id ? 'Blok waktu berhasil diperbarui!' : 'Blok waktu baru berhasil ditambahkan!');
     });
 }
 

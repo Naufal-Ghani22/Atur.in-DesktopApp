@@ -301,20 +301,20 @@
                     <div class="view-header">
                         <div>
                             <h2>Jadwal & Time Blocker Harian</h2>
-                            <p>Alokasikan blok waktu terbaik untuk meminimalisir distraksi.</p>
+                            <p>Sesuaikan durasi blok waktu mulai & selesai aktivitas kerja harianmu.</p>
                         </div>
                         <button class="btn-secondary" id="btn-add-timeblock">
-                            <i class="fa-solid fa-clock"></i> Tambah Blok Waktu
+                            <i class="fa-solid fa-plus"></i> Tambah Blok Waktu
                         </button>
                     </div>
 
                     <div class="schedule-container glass">
                         <div class="timeline-header">
                             <span class="time-col">Waktu</span>
-                            <span class="activity-col">Aktivitas & Alokasi Tugas</span>
+                            <span class="activity-col">Blok Aktivitas Harian</span>
                         </div>
                         <div class="timeline-body" id="timeline-slots">
-                            <!-- 24-Hour Timeline Generated via JS -->
+                            <!-- Timeline Generated via JS -->
                         </div>
                     </div>
                 </section>
@@ -462,25 +462,46 @@
         </div>
     </div>
 
-    <!-- MODAL: ADD TIME BLOCK -->
+    <!-- MODAL: ADD / EDIT TIME BLOCK -->
     <div class="modal-overlay" id="timeblock-modal">
         <div class="modal-content glass">
             <div class="modal-header">
-                <h3>Tambah Blok Waktu Jadwal</h3>
+                <h3 id="timeblock-modal-title">Tambah Blok Waktu Jadwal</h3>
                 <button class="modal-close" id="btn-close-timeblock-modal"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="timeblock-form">
+                <input type="hidden" id="tb-id">
+                
                 <div class="form-group">
-                    <label for="tb-hour">Jam (00:00 - 23:00)</label>
-                    <select id="tb-hour" class="select-input"></select>
-                </div>
-                <div class="form-group">
-                    <label for="tb-title">Aktivitas / Nama Blok</label>
+                    <label for="tb-title">Aktivitas / Nama Blok *</label>
                     <input type="text" id="tb-title" required placeholder="Misal: Deep Work Sesi 1 / Meeting Tim">
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tb-start-time">Jam Mulai *</label>
+                        <input type="time" id="tb-start-time" required value="09:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="tb-end-time">Jam Selesai *</label>
+                        <input type="time" id="tb-end-time" required value="10:30">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="tb-color">Warna Kategori Blok</label>
+                    <select id="tb-color" class="select-input">
+                        <option value="indigo">Ungu / Indigo 🔮</option>
+                        <option value="blue">Biru Muda 💧</option>
+                        <option value="emerald">Hijau Emerald 🌿</option>
+                        <option value="amber">Kuning / Amber ⚡</option>
+                        <option value="rose">Merah / Rose 🔥</option>
+                    </select>
+                </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" id="btn-cancel-timeblock">Batal</button>
-                    <button type="submit" class="btn-primary">Tambah ke Jadwal</button>
+                    <button type="submit" class="btn-primary">Simpan Blok Waktu</button>
                 </div>
             </form>
         </div>
