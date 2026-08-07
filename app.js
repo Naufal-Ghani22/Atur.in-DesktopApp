@@ -7,69 +7,19 @@ const START_HOUR = 6;  // 06:00
 const END_HOUR = 23;   // 23:00
 const ROW_HEIGHT = 60; // 60px per hour slot
 
-// Default Seed Data for New Users
-const INITIAL_TASKS = [
-    {
-        id: 'task-1',
-        title: 'Menyusun Laporan Kinerja Mingguan',
-        desc: 'Rekapitulasi pencapaian KPI dan evaluasi kendala operasional minggu ini.',
-        status: 'in-progress',
-        priority: 'high',
-        category: 'Work',
-        estTime: 45,
-        createdAt: new Date().toISOString()
-    },
-    {
-        id: 'task-2',
-        title: 'Review Proposal Project Web Client',
-        desc: 'Periksa spesifikasi teknis dan estimasi budget proyek perancangan website.',
-        status: 'todo',
-        priority: 'high',
-        category: 'Project',
-        estTime: 30,
-        createdAt: new Date().toISOString()
-    },
-    {
-        id: 'task-3',
-        title: 'Meeting Koordinasi Tim Desain',
-        desc: 'Sinkronisasi UI/UX komponen aplikasi produktivitas versi terbaru.',
-        status: 'review',
-        priority: 'medium',
-        category: 'Work',
-        estTime: 60,
-        createdAt: new Date().toISOString()
-    },
-    {
-        id: 'task-4',
-        title: 'Olahraga & Stretching Sore',
-        desc: 'Jogging ringan 20 menit untuk menjaga kebugaran tubuh.',
-        status: 'done',
-        priority: 'low',
-        category: 'Personal',
-        estTime: 20,
-        createdAt: new Date().toISOString()
-    }
-];
-
-const INITIAL_SCHEDULE = [
-    { id: 'tb-1', startTime: '08:00', endTime: '08:30', title: 'Morning Coffee & Review To-Do List', color: 'amber' },
-    { id: 'tb-2', startTime: '09:00', endTime: '11:30', title: 'Deep Work Sesi 1: Coding & Task Execution', color: 'indigo' },
-    { id: 'tb-3', startTime: '11:30', endTime: '12:30', title: 'Meeting Koordinasi Tim', color: 'blue' },
-    { id: 'tb-4', startTime: '12:30', endTime: '13:30', title: 'Istirahat & Makan Siang', color: 'emerald' },
-    { id: 'tb-5', startTime: '14:00', endTime: '16:30', title: 'Deep Work Sesi 2: Review Proposal', color: 'rose' }
-];
+// Clean State: Empty Initial Data (No Dummy Data)
+const INITIAL_TASKS = [];
+const INITIAL_SCHEDULE = [];
 
 // App State Manager
 class AppState {
     constructor() {
-        this.tasks = JSON.parse(localStorage.getItem('fp_tasks')) || INITIAL_TASKS;
+        this.tasks = JSON.parse(localStorage.getItem('fp_tasks')) || [];
         const rawSchedule = JSON.parse(localStorage.getItem('fp_schedule'));
         this.schedule = this.migrateSchedule(rawSchedule);
         
-        this.focusLogs = JSON.parse(localStorage.getItem('fp_focus_logs')) || [
-            { date: new Date().toLocaleDateString('id-ID'), minutes: 25, taskTitle: 'Menyusun Laporan Kinerja Mingguan' }
-        ];
-        this.streakDays = parseInt(localStorage.getItem('fp_streak')) || 3;
+        this.focusLogs = JSON.parse(localStorage.getItem('fp_focus_logs')) || [];
+        this.streakDays = parseInt(localStorage.getItem('fp_streak')) || 1;
 
         // Robust Timestamp-Based Timer State
         this.timer = {
@@ -84,8 +34,8 @@ class AppState {
     }
 
     migrateSchedule(rawSchedule) {
-        if (!rawSchedule || !Array.isArray(rawSchedule) || rawSchedule.length === 0) {
-            return INITIAL_SCHEDULE;
+        if (!rawSchedule || !Array.isArray(rawSchedule)) {
+            return [];
         }
 
         return rawSchedule.map((item, idx) => {
@@ -124,12 +74,11 @@ class AppState {
         localStorage.setItem('fp_timer_state', JSON.stringify(timerData));
     }
 
-    resetToDemo() {
-        this.tasks = [...INITIAL_TASKS];
-        this.schedule = [...INITIAL_SCHEDULE];
-        this.focusLogs = [
-            { date: new Date().toLocaleDateString('id-ID'), minutes: 25, taskTitle: 'Menyusun Laporan Kinerja Mingguan' }
-        ];
+    resetAllData() {
+        this.tasks = [];
+        this.schedule = [];
+        this.focusLogs = [];
+        this.streakDays = 1;
         this.save();
     }
 }
@@ -178,16 +127,20 @@ document.addEventListener('DOMContentLoaded', () => {
         todayBtn.addEventListener('click', scrollToCurrentTimeInGCal);
     }
 
-    document.getElementById('btn-seed-data').addEventListener('click', () => {
-        if (confirm('Apakah Anda ingin memuat ulang data contoh? Data yang ada akan diperbarui.')) {
-            state.resetToDemo();
-            renderAll();
-            showNotification('Data contoh berhasil dimuat!');
-        }
-    });
+    const resetDataBtn = document.getElementById('btn-seed-data');
+    if (resetDataBtn) {
+        resetDataBtn.innerHTML = `<i class="fa-solid fa-broom"></i> Bersihkan Semua Data`;
+        resetDataBtn.addEventListener('click', () => {
+            if (confirm('Apakah Anda yakin ingin mengosongkan semua tugas dan jadwal?')) {
+                state.resetAllData();
+                renderAll();
+                showNotification('Semua data berhasil dikosongkan!');
+            }
+        });
+    }
 });
 
-// Live Clock & Greeting (Updated to tick every 1000ms / 1 second in real-time)
+// Live Clock & Greeting (Realtime 1000ms)
 function initClock() {
     function updateClock() {
         const now = new Date();
@@ -213,7 +166,7 @@ function initClock() {
         updateGCalNowIndicator(now);
     }
     updateClock();
-    setInterval(updateClock, 1000); // 1 second real-time clock
+    setInterval(updateClock, 1000);
 }
 
 // Navigation Tabs
@@ -396,7 +349,7 @@ function renderDashboardPriorityTasks() {
         .slice(0, 4);
 
     if (priorityTasks.length === 0) {
-        container.innerHTML = `<p style="font-size: 13px; color: var(--text-dim); text-align: center; padding: 20px;">Belum ada tugas prioritas aktif. Tambahkan tugas baru!</p>`;
+        container.innerHTML = `<p style="font-size: 13px; color: var(--text-dim); text-align: center; padding: 20px;">Belum ada tugas. Tambahkan tugas baru!</p>`;
         return;
     }
 
@@ -1044,35 +997,26 @@ function initGlobalSearch() {
     });
 }
 
-// TOAST NOTIFICATIONS
+// SLEEK TOP-CENTER DESKTOP BUBBLE NOTIFICATION
 function showNotification(msg) {
-    const existing = document.querySelector('.toast-notification');
-    if (existing) existing.remove();
+    const existing = document.querySelectorAll('.toast-notification');
+    existing.forEach(el => el.remove());
 
     const toast = document.createElement('div');
     toast.className = 'toast-notification';
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-        color: #fff;
-        padding: 12px 20px;
-        border-radius: var(--radius-sm);
-        font-size: 13px;
-        font-weight: 700;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-        z-index: 200;
-        animation: slideUp 0.3s ease;
+    toast.innerHTML = `
+        <i class="fa-solid fa-bell" style="color: var(--accent-cyan); font-size: 16px;"></i>
+        <span>${escapeHtml(msg)}</span>
     `;
-    toast.textContent = msg;
+
     document.body.appendChild(toast);
 
     setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s ease';
+        toast.style.transform = 'translate(-50%, -20px) scale(0.95)';
+        toast.style.transition = 'all 0.3s ease';
         setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, 3500);
 }
 
 function escapeHtml(str) {
