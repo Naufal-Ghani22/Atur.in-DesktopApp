@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATUR.IN Focus Widget</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: transparent;
+            color: #f8fafc;
+            user-select: none;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mini-card {
+            width: 280px;
+            height: 160px;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.25);
+            border-radius: 20px;
+            padding: 14px 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .drag-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            -webkit-app-region: drag;
+            cursor: move;
+        }
+
+        .brand-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: #06b6d4;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mini-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            -webkit-app-region: no-drag;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 13px;
+            cursor: pointer;
+            transition: color 0.15s ease;
+        }
+
+        .icon-btn:hover {
+            color: #f8fafc;
+        }
+
+        .icon-btn.pinned {
+            color: #10b981;
+        }
+
+        .task-title {
+            font-size: 12px;
+            color: #cbd5e1;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        .clock-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 36px;
+            font-weight: 800;
+            color: #06b6d4;
+            text-align: center;
+            text-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+            margin: 2px 0;
+            -webkit-app-region: drag;
+        }
+
+        .mini-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            -webkit-app-region: no-drag;
+        }
+
+        .btn-mini-play {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: #fff;
+            border: none;
+            padding: 6px 18px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-mini-sub {
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="mini-card">
+        <div class="drag-header">
+            <span class="brand-label"><i class="fa-solid fa-bolt-lightning"></i> ATUR.IN Focus</span>
+            <div class="mini-actions">
+                <button class="icon-btn pinned" id="btn-pin-mini" title="Selalu di Atas (Always on Top)"><i class="fa-solid fa-thumbtack"></i></button>
+                <button class="icon-btn" id="btn-close-mini" title="Tutup Mini Window"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+
+        <div class="task-title" id="mini-task-label">Sesi Fokus Mandiri</div>
+        <div class="clock-display" id="mini-clock">25:00</div>
+
+        <div class="mini-controls">
+            <button class="btn-mini-play" id="btn-mini-toggle">
+                <i class="fa-solid fa-play" id="mini-play-icon"></i> <span id="mini-play-text">Start</span>
+            </button>
+            <button class="btn-mini-sub" id="btn-mini-reset">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        if (window.electronAPI) {
+            window.electronAPI.onSyncTimerFromMain((data) => {
+                if (data.clock) document.getElementById('mini-clock').textContent = data.clock;
+                if (data.taskTitle) document.getElementById('mini-task-label').textContent = data.taskTitle;
+                
+                if (data.isRunning !== undefined) {
+                    const icon = document.getElementById('mini-play-icon');
+                    const text = document.getElementById('mini-play-text');
+                    if (data.isRunning) {
+                        icon.className = 'fa-solid fa-pause';
+                        text.textContent = 'Jeda';
+                    } else {
+                        icon.className = 'fa-solid fa-play';
+                        text.textContent = 'Mulai';
+                    }
+                }
+
+                if (data.isPinned !== undefined) {
+                    const pinBtn = document.getElementById('btn-pin-mini');
+                    pinBtn.classList.toggle('pinned', data.isPinned);
+                }
+            });
+
+            document.getElementById('btn-pin-mini').addEventListener('click', () => {
+                window.electronAPI.sendTimerActionToMain('toggle-pin-mini');
+            });
+
+            document.getElementById('btn-close-mini').addEventListener('click', () => {
+                window.electronAPI.closeMiniTimer();
+            });
+
+            document.getElementById('btn-mini-toggle').addEventListener('click', () => {
+                window.electronAPI.sendTimerActionToMain('toggle-play');
+            });
+
+            document.getElementById('btn-mini-reset').addEventListener('click', () => {
+                window.electronAPI.sendTimerActionToMain('reset');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -7,7 +7,7 @@
     <!-- Font Family -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains-Mono:wght@500;700&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
@@ -63,7 +63,7 @@
                     </div>
                 </div>
                 <button class="btn-secondary btn-full" id="btn-seed-data" style="margin-top: 10px;">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Muat Data Contoh
+                    <i class="fa-solid fa-broom"></i> Bersihkan Semua Data
                 </button>
             </div>
         </aside>
@@ -78,6 +78,10 @@
                 </div>
 
                 <div class="header-right">
+                    <button class="btn-secondary btn-sm" id="btn-pin-main-app" title="Pin / Always on Top (Jendela Lapisan Atas)">
+                        <i class="fa-solid fa-thumbtack" id="pin-main-icon"></i> <span id="pin-main-text">Pin Layar</span>
+                    </button>
+
                     <div class="live-clock">
                         <i class="fa-regular fa-clock"></i>
                         <span id="current-time">00:00:00</span>
@@ -356,6 +360,13 @@
                             <button class="timer-mode-btn active" data-mode="focus">Focus (25m)</button>
                             <button class="timer-mode-btn" data-mode="shortBreak">Short Break (5m)</button>
                             <button class="timer-mode-btn" data-mode="longBreak">Long Break (15m)</button>
+                        </div>
+
+                        <!-- Floating Widget Controls -->
+                        <div class="timer-floating-actions" style="margin-bottom: 24px;">
+                            <button class="btn-secondary btn-sm" id="btn-open-mini-widget">
+                                <i class="fa-solid fa-up-right-from-square"></i> Buka Floating Widget (Desktop Kanan-Atas)
+                            </button>
                         </div>
 
                         <!-- Circular Timer Display -->

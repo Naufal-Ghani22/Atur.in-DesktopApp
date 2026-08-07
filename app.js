@@ -20,6 +20,7 @@ class AppState {
         
         this.focusLogs = JSON.parse(localStorage.getItem('fp_focus_logs')) || [];
         this.streakDays = parseInt(localStorage.getItem('fp_streak')) || 1;
+        this.isMainPinned = false;
 
         // Robust Timestamp-Based Timer State
         this.timer = {
@@ -119,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initModalEvents();
     initTimerEvents();
     initGlobalSearch();
+    initAlwaysOnTopAndMiniWidget();
     restoreTimerState();
     renderAll();
 
@@ -139,6 +141,71 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// ALWAYS-ON-TOP & FLOATING MINI WIDGET CONTROLLER
+function initAlwaysOnTopAndMiniWidget() {
+    const pinMainBtn = document.getElementById('btn-pin-main-app');
+    const openMiniBtn = document.getElementById('btn-open-mini-widget');
+
+    if (pinMainBtn) {
+        pinMainBtn.addEventListener('click', () => {
+            state.isMainPinned = !state.isMainPinned;
+            const icon = document.getElementById('pin-main-icon');
+            const text = document.getElementById('pin-main-text');
+
+            if (state.isMainPinned) {
+                pinMainBtn.classList.add('btn-primary');
+                pinMainBtn.classList.remove('btn-secondary');
+                if (text) text.textContent = 'Ter-pin di Atas';
+                showNotification('📌 Jendela utama di-PIN di lapisan teratas layar!');
+            } else {
+                pinMainBtn.classList.add('btn-secondary');
+                pinMainBtn.classList.remove('btn-primary');
+                if (text) text.textContent = 'Pin Layar';
+                showNotification('📍 Jendela utama kembali normal.');
+            }
+
+            if (window.electronAPI) {
+                window.electronAPI.toggleAlwaysOnTop(state.isMainPinned);
+            }
+        });
+    }
+
+    if (openMiniBtn) {
+        openMiniBtn.addEventListener('click', () => {
+            if (window.electronAPI) {
+                const mins = Math.floor(state.timer.remaining / 60);
+                const secs = state.timer.remaining % 60;
+                const timeFormatted = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                
+                let taskTitle = 'Sesi Fokus Mandiri';
+                if (state.timer.linkedTaskId) {
+                    const t = state.tasks.find(tk => tk.id === state.timer.linkedTaskId);
+                    if (t) taskTitle = t.title;
+                }
+
+                window.electronAPI.openMiniTimer({
+                    clock: timeFormatted,
+                    taskTitle: taskTitle,
+                    isRunning: state.timer.isRunning,
+                    isPinned: true
+                });
+
+                showNotification('📌 Floating Focus Widget terbuka di Kanan-Atas Layar!');
+            } else {
+                showNotification('Fitur Floating Desktop Widget memerlukan aplikasi versi desktop Electron.');
+            }
+        });
+    }
+
+    // Listen for actions from Floating Mini Window
+    if (window.electronAPI) {
+        window.electronAPI.onTimerActionInMain((action) => {
+            if (action === 'toggle-play') toggleTimer();
+            if (action === 'reset') resetTimer();
+        });
+    }
+}
 
 // Live Clock & Greeting (Realtime 1000ms)
 function initClock() {
@@ -539,7 +606,7 @@ function deleteTimeblock(timeblockId) {
     }
 }
 
-// ROBUST TIMESTAMP-BASED POMODORO TIMER ENGINE
+// ROBUST TIMESTAMP-BASED POMODORO TIMER ENGINE & MINI WIDGET SYNC
 function initTimerEvents() {
     const toggleBtn = document.getElementById('btn-timer-toggle');
     const resetBtn = document.getElementById('btn-timer-reset');
@@ -563,6 +630,7 @@ function initTimerEvents() {
         const task = state.tasks.find(t => t.id === e.target.value);
         document.getElementById('timer-linked-task').textContent = task ? task.title : 'Tidak ada tugas terpilih';
         state.saveTimerState();
+        syncStateToMiniWidget();
     });
 }
 
@@ -762,6 +830,28 @@ function updateTimerUI() {
         const offset = 553 - (state.timer.remaining / total) * 553;
         progressCircle.style.strokeDashoffset = offset;
     }
+
+    syncStateToMiniWidget();
+}
+
+function syncStateToMiniWidget() {
+    if (!window.electronAPI) return;
+
+    const mins = Math.floor(state.timer.remaining / 60);
+    const secs = state.timer.remaining % 60;
+    const timeFormatted = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+    let taskTitle = 'Sesi Fokus Mandiri';
+    if (state.timer.linkedTaskId) {
+        const t = state.tasks.find(tk => tk.id === state.timer.linkedTaskId);
+        if (t) taskTitle = t.title;
+    }
+
+    window.electronAPI.syncTimerToMini({
+        clock: timeFormatted,
+        taskTitle: taskTitle,
+        isRunning: state.timer.isRunning
+    });
 }
 
 function startTimerForTask(taskId) {
