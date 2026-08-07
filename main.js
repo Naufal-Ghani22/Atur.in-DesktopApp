@@ -3,7 +3,6 @@ const path = require('path');
 
 let mainWindow = null;
 let miniTimerWindow = null;
-let isMainPinned = false;
 
 function createMainWindow() {
     mainWindow = new BrowserWindow({
@@ -51,8 +50,11 @@ function createMainWindow() {
 }
 
 function createMiniTimerWindow(initialData) {
-    if (miniTimerWindow) {
+    if (miniTimerWindow && !miniTimerWindow.isDestroyed()) {
         miniTimerWindow.focus();
+        if (initialData) {
+            miniTimerWindow.webContents.send('sync-timer', initialData);
+        }
         return;
     }
 
@@ -60,15 +62,15 @@ function createMiniTimerWindow(initialData) {
     const { width: screenWidth } = primaryDisplay.workAreaSize;
 
     miniTimerWindow = new BrowserWindow({
-        width: 300,
-        height: 180,
-        x: screenWidth - 320,
+        width: 250,
+        height: 130,
+        x: screenWidth - 270,
         y: 40,
         frame: false,
         transparent: true,
-        alwaysOnTop: true, // Pinned at top layer by default
+        alwaysOnTop: true, // Pinned at top layer over all windows/tabs by default
         resizable: false,
-        skipTaskbar: true,
+        skipTaskbar: false,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -91,7 +93,6 @@ function createMiniTimerWindow(initialData) {
 
 // IPC Main Message Handlers
 ipcMain.on('toggle-always-on-top', (event, isPinned) => {
-    isMainPinned = isPinned;
     if (mainWindow) {
         mainWindow.setAlwaysOnTop(isPinned, 'screen-saver');
     }
@@ -102,7 +103,7 @@ ipcMain.on('open-mini-timer', (event, data) => {
 });
 
 ipcMain.on('close-mini-timer', () => {
-    if (miniTimerWindow) {
+    if (miniTimerWindow && !miniTimerWindow.isDestroyed()) {
         miniTimerWindow.close();
         miniTimerWindow = null;
     }

@@ -28,15 +28,15 @@
         }
 
         .mini-card {
-            width: 280px;
-            height: 160px;
+            width: 240px;
+            height: 120px;
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.25);
+            border: 1px solid rgba(99, 102, 241, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.3);
             border-radius: 20px;
-            padding: 14px 18px;
+            padding: 10px 14px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -51,12 +51,12 @@
         }
 
         .brand-label {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 800;
             color: #06b6d4;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -64,7 +64,7 @@
         .mini-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             -webkit-app-region: no-drag;
         }
 
@@ -72,7 +72,7 @@
             background: none;
             border: none;
             color: #94a3b8;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             transition: color 0.15s ease;
         }
@@ -86,24 +86,25 @@
         }
 
         .task-title {
-            font-size: 12px;
+            font-size: 11px;
             color: #cbd5e1;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             text-align: center;
-            margin-top: 4px;
+            margin-top: 2px;
         }
 
         .clock-display {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 36px;
+            font-size: 32px;
             font-weight: 800;
             color: #06b6d4;
             text-align: center;
             text-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
-            margin: 2px 0;
+            margin: 0;
+            line-height: 1;
             -webkit-app-region: drag;
         }
 
@@ -111,7 +112,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 8px;
             -webkit-app-region: no-drag;
         }
 
@@ -119,24 +120,24 @@
             background: linear-gradient(135deg, #6366f1, #a855f7);
             color: #fff;
             border: none;
-            padding: 6px 18px;
-            border-radius: 14px;
-            font-size: 12px;
+            padding: 4px 14px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 6px;
-            box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+            gap: 4px;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
         }
 
         .btn-mini-sub {
             background: rgba(255, 255, 255, 0.08);
             color: #cbd5e1;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 6px 12px;
-            border-radius: 14px;
-            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
         }
@@ -145,10 +146,10 @@
 <body>
     <div class="mini-card">
         <div class="drag-header">
-            <span class="brand-label"><i class="fa-solid fa-bolt-lightning"></i> ATUR.IN Focus</span>
+            <span class="brand-label"><i class="fa-solid fa-stopwatch"></i> ATUR.IN Timer</span>
             <div class="mini-actions">
-                <button class="icon-btn pinned" id="btn-pin-mini" title="Selalu di Atas (Always on Top)"><i class="fa-solid fa-thumbtack"></i></button>
-                <button class="icon-btn" id="btn-close-mini" title="Tutup Mini Window"><i class="fa-solid fa-xmark"></i></button>
+                <button class="icon-btn pinned" id="btn-pin-mini" title="Pin di Lapisan Atas (Always on Top)"><i class="fa-solid fa-thumbtack"></i></button>
+                <button class="icon-btn" id="btn-close-mini" title="Tutup Floating Timer"><i class="fa-solid fa-xmark"></i></button>
             </div>
         </div>
 
