@@ -72,11 +72,16 @@ body {
     overflow: hidden;
 }
 
-/* Ensure inputs, textareas, and selects allow native typing and text selection */
+/* Ensure input elements allow typing */
 input, textarea, select {
     user-select: text !important;
     -webkit-user-select: text !important;
     pointer-events: auto !important;
+}
+
+/* Ensure button icons do NOT capture mouse events away from parent buttons */
+button i, .card-action-btn i, .btn-primary i, .btn-secondary i, .icon-btn i {
+    pointer-events: none !important;
 }
 
 /* Scrollbar Customization */
@@ -892,25 +897,41 @@ input, textarea, select {
 }
 
 .card-actions {
+    position: relative;
+    z-index: 10;
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 6px;
 }
 
 .card-action-btn {
-    background: none;
-    border: none;
-    color: var(--text-dim);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
     cursor: pointer;
     font-size: 13px;
     transition: var(--transition-fast);
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
 .card-action-btn:hover {
     color: var(--text-main);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
 }
 
 .card-action-btn.delete:hover {
     color: var(--accent-rose);
+    background: rgba(244, 63, 94, 0.15);
+    border-color: var(--accent-rose);
 }
 
 /* 3. GOOGLE CALENDAR DAY VIEW STYLES */

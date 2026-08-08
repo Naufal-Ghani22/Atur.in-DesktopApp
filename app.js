@@ -325,13 +325,13 @@ function renderKanban() {
             <div class="card-bottom">
                 <span><i class="fa-regular fa-clock"></i> ${task.estTime}m</span>
                 <div class="card-actions">
-                    <button class="card-action-btn" onclick="startTimerForTask('${task.id}')" title="Mulai Timer Fokus">
+                    <button class="card-action-btn" onclick="event.stopPropagation(); startTimerForTask('${task.id}')" title="Mulai Timer Fokus">
                         <i class="fa-solid fa-circle-play" style="color: var(--accent-cyan);"></i>
                     </button>
-                    <button class="card-action-btn" onclick="editTask('${task.id}')" title="Edit Tugas">
+                    <button class="card-action-btn" onclick="event.stopPropagation(); editTask('${task.id}')" title="Edit Tugas">
                         <i class="fa-solid fa-pen"></i>
                     </button>
-                    <button class="card-action-btn delete" onclick="deleteTask('${task.id}')" title="Hapus">
+                    <button class="card-action-btn delete" onclick="event.stopPropagation(); deleteTask('${task.id}')" title="Hapus">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
@@ -339,6 +339,10 @@ function renderKanban() {
         `;
 
         card.addEventListener('dragstart', (e) => {
+            if (e.target.closest('.card-actions') || e.target.closest('button')) {
+                e.preventDefault();
+                return false;
+            }
             card.classList.add('dragging');
             e.dataTransfer.setData('text/plain', task.id);
         });
@@ -1084,6 +1088,16 @@ function quickCompleteTask(taskId) {
         showNotification('🎉 Tugas ditandai Selesai!');
     }
 }
+
+// Global functions attached to window for reliable onclick execution
+window.editTask = editTask;
+window.deleteTask = deleteTask;
+window.startTimerForTask = startTimerForTask;
+window.quickCompleteTask = quickCompleteTask;
+window.editTimeblock = editTimeblock;
+window.deleteTimeblock = deleteTimeblock;
+window.openAddTaskModal = openAddTaskModal;
+window.switchTab = switchTab;
 
 // GLOBAL SEARCH
 function initGlobalSearch() {
